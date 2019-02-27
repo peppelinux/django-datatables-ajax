@@ -1,3 +1,9 @@
+import datetime
+import json
+
+from django.conf import settings
+from django.utils import timezone
+
 class DjangoDatatablesServerProc(object):
     def __init__(self, request, model, columns):
         """
@@ -7,7 +13,13 @@ class DjangoDatatablesServerProc(object):
         """
         self.columns = columns
         self.model  = model
-        self.dt_ajax_request = dict(request.GET)
+
+        if request.POST.get('args'):
+            r = json.loads(request.POST.get('args'))
+        else:
+            r = dict(request.GET)
+
+        self.dt_ajax_request = r
         # queryset attributes
         self.aqs = None
         self.fqs = None
@@ -16,16 +28,29 @@ class DjangoDatatablesServerProc(object):
         # returned as 0 (assuming that was the issue). As the documentation
         # says, it should be returned as the same value that was sent
         # (cast as an integer)
-        self.d = {'draw': int(self.dt_ajax_request['draw'][0]),
-                  'recordsTotal': 0,
-                  'recordsFiltered': 0,
-                  'data': []}
 
-        self.lenght = self.dt_ajax_request['length']
-        self.start  = self.dt_ajax_request['start']
-        self.search_key = self.dt_ajax_request['search[value]']
-        self.order_col = self.dt_ajax_request['order[0][column]']
-        self.order_dir = self.dt_ajax_request['order[0][dir]']
+        if request.method == 'GET':
+            self.d = {'draw': int(self.dt_ajax_request['draw'][0]),
+                      'recordsTotal': 0,
+                      'recordsFiltered': 0,
+                      'data': []}
+            self.lenght = self.dt_ajax_request['length']
+            self.start  = self.dt_ajax_request['start']
+            self.search_key = self.dt_ajax_request['search[value]']
+            self.order_col = self.dt_ajax_request['order[0][column]']
+            self.order_dir = self.dt_ajax_request['order[0][dir]']
+        else:
+            # request.POST
+            self.d = {'draw': int(self.dt_ajax_request['draw']),
+                      'recordsTotal': 0,
+                      'recordsFiltered': 0,
+                      'data': []}
+            self.lenght = self.dt_ajax_request['length']
+            self.start  = self.dt_ajax_request['start']
+            self.search_key = self.dt_ajax_request['search']['value']
+            self.order_col = self.dt_ajax_request['order'][0]['column']
+            self.order_dir = self.dt_ajax_request['order'][0]['dir']
+
         # casting
         for field in ['lenght', 'start', 'search_key',
                       'order_col', 'order_dir']:
@@ -35,6 +60,7 @@ class DjangoDatatablesServerProc(object):
             else:
                 setattr(self, field, attr)
 
+            if isinstance(attr, int): continue
             if getattr(self, field).isdigit():
                 v = getattr(self, field)
                 setattr(self, field, int(v))
@@ -96,9 +122,15 @@ class DjangoDatatablesServerProc(object):
                 # this avoid null json valueù
                 v = getattr(r, e)
                 if v:
-                    cleaned_data.append(v.__str__())
+                    if isinstance(v, datetime.datetime):
+                        vrepr = v.strftime(settings.DEFAULT_DATETIME_FORMAT)
+                    elif isinstance(v, datetime.date):
+                        vrepr = v.strftime(settings.DEFAULT_DATE_FORMAT)
+                    else:
+                        vrepr = v.__str__()
                 else:
-                    cleaned_data.append('')
+                    vrepr = ''
+                cleaned_data.append(vrepr)
 
             self.d['data'].append( cleaned_data )
         self.d['recordsTotal'] = self.model.objects.count()
