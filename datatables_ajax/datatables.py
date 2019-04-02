@@ -126,6 +126,8 @@ class DjangoDatatablesServerProc(object):
                         vrepr = v.strftime(settings.DEFAULT_DATETIME_FORMAT)
                     elif isinstance(v, datetime.date):
                         vrepr = v.strftime(settings.DEFAULT_DATE_FORMAT)
+                    elif callable(v):
+                        vrepr = str(v())
                     else:
                         vrepr = v.__str__()
                 else:
