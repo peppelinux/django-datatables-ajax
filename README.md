@@ -69,6 +69,20 @@ from django.http import JsonResponse
 
 from .datatables import DjangoDatatablesServerProc
 
+class DTD(DjangoDatatablesServerProc):
+    def get_queryset(self):
+        data_year = self.request.GET.get('created__year') or \
+                    self.request.POST.get('created__year') or \
+                    datetime.date.today().year
+        if self.search_key:
+            self.aqs = self.model.filter(created__year=data_year)\
+                .filter(\
+                Q(code__icontains=self.search_key)      | \
+                Q(subject__icontains=self.search_key)      | \
+                Q(category__name__icontains=self.search_key)
+        else:
+            self.aqs = self.model.filter(created__year=data_year)
+
 @login_required
 def datatable_data(request):
     radcheck = get_radcheck_active(request)
@@ -79,18 +93,8 @@ def datatable_data(request):
 
     base_query = model.objects.filter(username__in=[i.username for i in radius_accounts]).exclude(calling_station_id='').order_by('-date')
     
-    class DTD(DjangoDatatablesServerProc):
-        def get_queryset(self):
-            if self.search_key:
-                self.aqs = base_query.filter(
-                                        Q(username__icontains=self.search_key) | \
-                                        Q(reply__icontains=self.search_key)    | \
-                                        Q(calling_station_id__icontains=self.search_key))
-            else:
-                self.aqs = base_query.filter(username=radcheck.username)
     
-    
-    dtd = DTD( request, model, columns )
+    dtd = DTD( request, base_query, columns )
     return JsonResponse(dtd.get_dict())
 ````
 
