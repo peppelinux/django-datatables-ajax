@@ -12,8 +12,8 @@ class DjangoDatatablesServerProc(object):
                     'contattato_mediante', 'data_creazione', 'stato']
         """
         self.columns = columns
-        self.model  = model
-
+        self.model  = model.objects if hasattr(model, 'objects') else model
+        self.request = request
         if request.POST.get('args'):
             r = json.loads(request.POST.get('args'))
         else:
@@ -135,7 +135,7 @@ class DjangoDatatablesServerProc(object):
                 cleaned_data.append(vrepr)
 
             self.d['data'].append( cleaned_data )
-        self.d['recordsTotal'] = self.model.objects.count()
+        self.d['recordsTotal'] = self.model.count()
         self.d['recordsFiltered'] = self.aqs.count()
 
     def get_dict(self):
