@@ -14,7 +14,8 @@ class DjangoDatatablesServerProc(object):
         self.columns = columns
         self.model  = model.objects if hasattr(model, 'objects') else model
         self.request = request
-        if request.POST.get('args'):
+        self.method = 'POST' if request.POST.get('args') else 'GET'
+        if self.method == 'POST':
             r = json.loads(request.POST.get('args'))
         else:
             r = dict(request.GET)
@@ -29,7 +30,7 @@ class DjangoDatatablesServerProc(object):
         # says, it should be returned as the same value that was sent
         # (cast as an integer)
 
-        if request.method == 'GET':
+        if self.method == 'GET':
             self.d = {'draw': int(self.dt_ajax_request['draw'][0]),
                       'recordsTotal': 0,
                       'recordsFiltered': 0,
@@ -77,8 +78,7 @@ class DjangoDatatablesServerProc(object):
                 Q(cliente__nominativo__icontains=self.search_key) | \
                 Q(corso__nome__istartswith=self.search_key)       | \
                 Q(contattato_mediante__nome__istartswith=self.search_key) | \
-                Q(altro__nome__istartswith=self.search_key)    \
-                )
+                Q(altro__nome__istartswith=self.search_key))
         else:
             self.aqs = self.model.objects.all()
 
@@ -110,7 +110,13 @@ class DjangoDatatablesServerProc(object):
         self.fqs = self.aqs[self.start:self.start+self.lenght]
 
     def _make_aware(self, dt):
+        if hasattr(dt, 'tzinfo') and dt.tzinfo != timezone.get_default_timezone():
+            return dt.astimezone(timezone.get_default_timezone())
         return timezone.make_aware(dt, timezone=timezone.get_current_timezone())
+
+    def _dt_strftime_as_naive(self, dt):
+        """ todo """
+        pass
 
     def fill_data(self):
         """
@@ -122,7 +128,7 @@ class DjangoDatatablesServerProc(object):
         for r in self.fqs:
             cleaned_data = []
             for e in self.columns:
-                # this avoid null json valueù
+                # this avoid null json value
                 v = getattr(r, e)
                 if v:
                     if isinstance(v, datetime.datetime):
