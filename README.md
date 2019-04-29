@@ -14,13 +14,13 @@ To get it works just put datatables in your html template, like this:
     <script src="/statics/js/vendors/jquery/dist/jquery.min.js"></script>
     <!-- Datatables -->
     <script src="/statics/js/vendors/datatables.net/js/jquery.dataTables.js"></script>
-    
+
     <!-- Datatables -->
     <script>
       $(document).ready(function() {
 
         $('.datatable-responsive-serverside').DataTable({
-        
+
             "aLengthMenu": [
             [25, 50, 100, 500, ], // -1],
             [25, 50, 100, 500, ] //"All"]
@@ -87,13 +87,13 @@ class DTD(DjangoDatatablesServerProc):
 def datatable_data(request):
     radcheck = get_radcheck_active(request)
     radius_accounts = _get_radius_accounts(request, radcheck)
-    
-    model               = RadiusPostAuth
+
+    model               = RadiusPostAuth # or a queryset
     columns             = ['pk', 'username', 'reply', 'calling_station_id', 'date']
 
     base_query = model.objects.filter(username__in=[i.username for i in radius_accounts]).exclude(calling_station_id='').order_by('-date')
-    
-    
+
+
     dtd = DTD( request, base_query, columns )
     return JsonResponse(dtd.get_dict())
 ````

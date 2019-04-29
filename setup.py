@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(name='django-datatables-ajax',
-      version='0.6',
+      version='0.8',
       description=('Lightweight Django class for a full Datatables server processing implementation'),
       long_description=readme(),
       classifiers=[

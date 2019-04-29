@@ -109,6 +109,9 @@ class DjangoDatatablesServerProc(object):
         self.get_ordering()
         self.fqs = self.aqs[self.start:self.start+self.lenght]
 
+    def _make_aware(self, dt):
+        return timezone.make_aware(dt, timezone=timezone.get_current_timezone())
+
     def fill_data(self):
         """
         overload me if you need some clean up
@@ -123,7 +126,7 @@ class DjangoDatatablesServerProc(object):
                 v = getattr(r, e)
                 if v:
                     if isinstance(v, datetime.datetime):
-                        vrepr = v.strftime(settings.DEFAULT_DATETIME_FORMAT)
+                        vrepr = self._make_aware(v).strftime(settings.DEFAULT_DATETIME_FORMAT)
                     elif isinstance(v, datetime.date):
                         vrepr = v.strftime(settings.DEFAULT_DATE_FORMAT)
                     elif callable(v):
