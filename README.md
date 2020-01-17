@@ -75,13 +75,13 @@ class DTD(DjangoDatatablesServerProc):
                     self.request.POST.get('created__year') or \
                     datetime.date.today().year
         if self.search_key:
-            self.aqs = self.model.filter(created__year=data_year)\
+            self.aqs = self.queryset.filter(created__year=data_year)\
                 .filter(\
                 Q(code__icontains=self.search_key)      | \
                 Q(subject__icontains=self.search_key)      | \
                 Q(category__name__icontains=self.search_key)
         else:
-            self.aqs = self.model.filter(created__year=data_year)
+            self.aqs = self.queryset.filter(created__year=data_year)
 
 @login_required
 def datatable_data(request):
@@ -110,13 +110,13 @@ urlpatterns = [
 ]
 ````
 
-Example app
------------
+Example app and Tests
+---------------------
 
 ````
-cd example
+cd example_project
 ./manage.py makemigrations
 ./manage.py migrate
 ./manage.py createsuperuser
-./manage.py runserver
+./manage.py test
 ````

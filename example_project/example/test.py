@@ -20,19 +20,24 @@ class BaseTest(TestCase):
                                               description="descr 1",
                                               priority="1")
 
-    def test_tickets(self):
-        logger.info(self.ticket_1)
-        assert self.ticket_1
+        self.post_data = {"draw":1,
+                          "order":[{"column":0,"dir":"asc"}],
+                          "start":0,
+                          "length":10,
+                          "search":{"value":"","regex":False}
+                         }
+        self.get_data = {"draw":1,
+                         "order[0][column]":1,
+                         "order[0][dir]":"asc",
+                         "start":0,
+                         "length":10,
+                         "search[value]":"subject 1",
+                         "regex":False
+                        }
 
     def test_datatables_getalltickets_post(self):
         c = Client()
-        p = {"draw":1,
-             "order":[{"column":0,"dir":"asc"}],
-             "start":0,
-             "length":10,
-             "search":{"value":"","regex":False}
-            }
-        args = json.dumps(p)
+        args = json.dumps(self.post_data)
         response = c.post('/all_ticket.json', {"args": args})
         response_string = response.content.decode("utf-8")
         response_json = json.loads(response_string)
@@ -42,16 +47,7 @@ class BaseTest(TestCase):
 
     def test_datatables_getalltickets_get(self):
         c = Client()
-        p = {"draw":1,
-             "order[0][column]":1,
-             "order[0][dir]":"asc",
-             "start":0,
-             "length":10,
-             "search[value]":"subject 1",
-             "regex":False
-            }
-        args = json.dumps(p)
-        response = c.get('/all_ticket.json', p)
+        response = c.get('/all_ticket.json', self.get_data)
         response_string = response.content.decode("utf-8")
         response_json = json.loads(response_string)
         data = response_json['data']
@@ -60,13 +56,8 @@ class BaseTest(TestCase):
 
     def test_datatables_search_valid(self):
         c = Client()
-        p = {"draw":1,
-             "order":[{"column":1,"dir":"asc"}],
-             "start":0,
-             "length":-1, # all the records
-             "search":{"value":"subject 1","regex":False}
-            }
-        args = json.dumps(p)
+        self.post_data['search']['value'] = "subject 1"
+        args = json.dumps(self.post_data)
         response = c.post('/all_ticket.json', {"args": args})
         response_string = response.content.decode("utf-8")
         response_json = json.loads(response_string)
@@ -76,13 +67,8 @@ class BaseTest(TestCase):
 
     def test_datatables_search_invalid(self):
         c = Client()
-        p = {"draw":1,
-             "order":[{"column":0,"dir":"asc"}],
-             "start":0,
-             "length":10,
-             "search":{"value":"subject 10","regex":False}
-            }
-        args = json.dumps(p)
+        self.post_data['search']['value'] = "subject 10000"
+        args = json.dumps(self.post_data)
         response = c.post('/all_ticket.json', {"args": args})
         response_string = response.content.decode("utf-8")
         response_json = json.loads(response_string)

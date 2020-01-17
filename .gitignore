@@ -1,9 +1,6 @@
 build/
 dist/
 *egg-info
-
-example_project/
 db.sqlite3
-manage.py
 .coverage
 *__pycache__/
