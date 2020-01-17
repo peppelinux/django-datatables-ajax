@@ -1,8 +1,10 @@
 from django.conf.urls import include, url
 from django.contrib.auth.decorators import login_required
 
-from .views import *
+from . views import *
+
+app_name="example"
 
 urlpatterns = [
-    url(r'^datatable.json$', login_required(StatoUtenzaCorso_DTJson), name='datatable_json'),
+    url(r'^all_ticket.json$', get_all_ticket_json, name='get_all_ticket_json'),
 ]

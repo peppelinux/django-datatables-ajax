@@ -1,0 +1,15 @@
+# .coveragerc to control coverage.py
+[run]
+omit =
+    */__init__.py
+    */admin.py
+    */apps/*
+    */distutils/*
+    */example/*
+    /example_project/example_project/*
+    */manage.py
+    */migrations/*
+    */settings.py
+    */site-packages/*
+    */src/*
+    */urls.py

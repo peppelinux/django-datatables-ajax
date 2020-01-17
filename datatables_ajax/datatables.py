@@ -1,18 +1,24 @@
 import datetime
 import json
 
+from abc import abstractmethod
+
 from django.conf import settings
 from django.utils import timezone
 
+from . settings import *
+
+
 class DjangoDatatablesServerProc(object):
-    def __init__(self, request, model, columns):
+    def __init__(self, request, queryset, columns):
         """
         model    = StatoUtenzaCorso
         columns  = ['pk', 'cliente', 'corso',  'altro',
                     'contattato_mediante', 'data_creazione', 'stato']
         """
         self.columns = columns
-        self.model  = model.objects if hasattr(model, 'objects') else model
+        # self.model  = model.objects if hasattr(model, 'objects') else model
+        self.queryset  = queryset
         self.request = request
         self.method = 'POST' if request.POST.get('args') else 'GET'
         if self.method == 'POST':
@@ -66,21 +72,25 @@ class DjangoDatatablesServerProc(object):
                 v = getattr(self, field)
                 setattr(self, field, int(v))
 
+    @abstractmethod
     def get_queryset(self):
         """
-           Overload me.
+           Overload me in your DjangoDatatablesServerProc' inherited class!
            The query must be customized to get it work
+
+           Example data:
+               if self.search_key:
+                    self.aqs = self.model.objects.filter(
+                        Q(cliente__nome__icontains=self.search_key)       | \
+                        Q(cliente__cognome__icontains=self.search_key)    | \
+                        Q(cliente__nominativo__icontains=self.search_key) | \
+                        Q(corso__nome__istartswith=self.search_key)       | \
+                        Q(contattato_mediante__nome__istartswith=self.search_key) | \
+                        Q(altro__nome__istartswith=self.search_key))
+                else:
+                    self.aqs = self.model.objects.all()
         """
-        if self.search_key:
-            self.aqs = self.model.objects.filter(
-                Q(cliente__nome__icontains=self.search_key)       | \
-                Q(cliente__cognome__icontains=self.search_key)    | \
-                Q(cliente__nominativo__icontains=self.search_key) | \
-                Q(corso__nome__istartswith=self.search_key)       | \
-                Q(contattato_mediante__nome__istartswith=self.search_key) | \
-                Q(altro__nome__istartswith=self.search_key))
-        else:
-            self.aqs = self.model.objects.all()
+        pass
 
     def get_ordering(self):
         """
@@ -110,8 +120,11 @@ class DjangoDatatablesServerProc(object):
         self.fqs = self.aqs[self.start:self.start+self.lenght]
 
     def _make_aware(self, dt):
-        if hasattr(dt, 'tzinfo') and dt.tzinfo != timezone.get_default_timezone():
-            return dt.astimezone(timezone.get_default_timezone())
+        if hasattr(dt, 'tzinfo'):
+            if dt.tzinfo != timezone.get_default_timezone():
+                return dt.astimezone(timezone.get_default_timezone())
+            else:
+                return dt
         return timezone.make_aware(dt, timezone=timezone.get_current_timezone())
 
     def _dt_strftime_as_naive(self, dt):
@@ -132,9 +145,15 @@ class DjangoDatatablesServerProc(object):
                 v = getattr(r, e)
                 if v:
                     if isinstance(v, datetime.datetime):
-                        vrepr = self._make_aware(v).strftime(settings.DEFAULT_DATETIME_FORMAT)
+                        default_datetime_format = DEFAULT_DATETIME_FORMAT
+                        if hasattr(settings, 'DEFAULT_DATETIME_FORMAT'):
+                            default_datetime_format = settings.DEFAULT_DATETIME_FORMAT
+                        vrepr = self._make_aware(v).strftime(default_datetime_format)
                     elif isinstance(v, datetime.date):
-                        vrepr = v.strftime(settings.DEFAULT_DATE_FORMAT)
+                        default_date_format = DEFAULT_DATE_FORMAT
+                        if hasattr(settings, 'DEFAULT_DATE_FORMAT'):
+                            default_date_format = settings.DEFAULT_DATE_FORMAT
+                        vrepr = v.strftime(default_date_format)
                     elif callable(v):
                         vrepr = str(v())
                     else:
@@ -144,7 +163,7 @@ class DjangoDatatablesServerProc(object):
                 cleaned_data.append(vrepr)
 
             self.d['data'].append( cleaned_data )
-        self.d['recordsTotal'] = self.model.count()
+        self.d['recordsTotal'] = self.queryset.count()
         self.d['recordsFiltered'] = self.aqs.count()
 
     def get_dict(self):
