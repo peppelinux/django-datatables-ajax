@@ -1,0 +1,111 @@
+{% load i18n %}
+{% load static %}
+
+<script charset="utf8" src="{% static 'js/datatables/datatables.min.js' %}"></script>
+<script>
+$.urlParam = function(name){
+	var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+	return results[1] || 0;
+}
+var url = "{{ item_url }}";
+$(document).ready(function() {
+
+    var datatable = $('.datatable-responsive-serverside').DataTable({
+        dom: 'lrtip',
+        aLengthMenu: [
+            [10, 25, 50, 100, ], // -1],
+            [10, 25, 50, 100, ] //"All"]
+        ],
+        paging: true,
+        //responsive: true,
+        processing: true,
+        serverSide: true,
+        columnDefs: [
+            // Checkbox column (PK)
+            {
+                visible: false,
+                orderable: false,
+                className: "select-checkbox",
+                targets:   [ 0 ],
+                data: null,
+                defaultContent: "",
+                render: function ( data, type, row ) {
+                    return "<input type='checkbox' name='ticket_id' value='"+row[0]+"' />";
+                }
+            } ,+
+            // Code column
+            {
+                targets: [ 1 ],
+                render: function ( data, type, row ) {
+                    return "<a href='"+item_url+row[1]+"'>"+data+"</a>";
+                }
+            },
+            // Subject column
+            {
+                targets: [ 2 ],
+                orderable: true,
+            },
+            // Created column
+            {
+                targets: [ 3 ],
+                orderable: true,
+            },
+            // Edited column
+            {
+                targets: [ 4 ],
+                orderable: true,
+            },
+            // Description column
+            {
+                targets: [ 5 ],
+                orderable: false,
+            },
+            // Priority column
+            {
+                targets: [ 6 ],
+                orderable: false,
+            },
+        ],
+        language: {
+            "emptyTable":     "{% trans 'No records' %}",
+            "info":           "{% trans 'Visible' %} _END_ {% trans 'of' %} _TOTAL_ {% trans 'total records' %}",
+            "infoEmpty":      "{% trans 'Visible' %} 0 {% trans 'record' %}",
+            "infoPostFix":    "",
+            "thousands":      ",",
+            "lengthMenu":     "{% trans 'Show' %} _MENU_",
+            "loadingRecords": "Loading...",
+            "processing":     "Processing...",
+            "zeroRecords":    "{% trans 'No record found' %}",
+            "paginate": {
+                "first":      "{% trans 'First' %}",
+                "last":       "{% trans 'Last' %}",
+                "next":       "{% trans 'Next' %}",
+                "previous":   "{% trans 'Previous' %}"
+            },
+        },
+        //ajax: '{{ ajax_url }}',
+        ajax: {
+            url: "{{ ajax_url }}",
+            method: "post",
+            data: function(args) {
+                return{
+                    "args": JSON.stringify(args),
+                    {% for k,v in request.GET.items %}
+                        "{{ k }}": "{{ v }}",
+                    {% endfor %}
+                };
+            }
+        },
+    });
+
+    // Search engine (select box with years and free text field)
+    // See templates/top_filters.html
+    $('#year, #search_box').on('change keyup', function () {
+        var year = $('#year').val();
+        var text = $('#search_box').val();
+        var args = '{"year": "'+year+'", "text": "'+text+'"}';
+        datatable.search(args).draw();
+    } );
+
+});
+</script>

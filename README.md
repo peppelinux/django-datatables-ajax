@@ -109,3 +109,14 @@ urlpatterns = [
     url(r'^datatable.json$', login_required(StatoUtenzaCorso_DTJson), name='datatable_json'),
 ]
 ````
+
+Example app
+-----------
+
+````
+cd example
+./manage.py makemigrations
+./manage.py migrate
+./manage.py createsuperuser
+./manage.py runserver
+````
